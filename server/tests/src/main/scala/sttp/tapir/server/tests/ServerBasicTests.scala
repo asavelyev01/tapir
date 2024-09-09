@@ -603,6 +603,34 @@ class ServerBasicTests[F[_], OPTIONS, ROUTE](
         basicRequest.get(uri"$baseUri/p2").send(backend).map(_.code shouldBe StatusCode.Ok)
     },
     testServer(
+      "two endpoints with the same path inputs, GET and POST methods, should match both per path",
+      NonEmptyList.of(
+        route(
+          List[ServerEndpoint[Any, F]](
+            endpoint.in("p").get.out(stringBody).serverLogic((_: Unit) => pureResult("e1".asRight[Unit])),
+            endpoint.in("p").post.out(stringBody).serverLogic((_: Unit) => pureResult("e2".asRight[Unit]))
+          )
+        )
+      )
+    ) { (backend, baseUri) =>
+      basicRequest.get(uri"$baseUri/p").send(backend).map(_.body shouldBe Right("e1")) >>
+        basicRequest.post(uri"$baseUri/p").send(backend).map(_.body shouldBe Right("e2"))
+    },
+    testServer(
+      "two endpoints with the same path inputs, POST and DELETE methods, should match both per path",
+      NonEmptyList.of(
+        route(
+          List[ServerEndpoint[Any, F]](
+            endpoint.in("p").post.out(stringBody).serverLogic((_: Unit) => pureResult("e1".asRight[Unit])),
+            endpoint.in("p").delete.out(stringBody).serverLogic((_: Unit) => pureResult("e2".asRight[Unit]))
+          )
+        )
+      )
+    ) { (backend, baseUri) =>
+      basicRequest.post(uri"$baseUri/p").send(backend).map(_.body shouldBe Right("e1")) >>
+        basicRequest.delete(uri"$baseUri/p").send(backend).map(_.body shouldBe Right("e2"))
+    },
+    testServer(
       "endpoint with a security input and regular path input shouldn't shadow other endpoints",
       NonEmptyList.of(
         route(
